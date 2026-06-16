@@ -1,0 +1,11 @@
+{
+    "name": "smartleads-bi-advanced",
+    "private": true,
+    "scripts": {
+        "install": "cd frontend && npm ci",
+        "build": "cd frontend && npm run build"
+    },
+    "engines": {
+        "node": ">=20"
+    }
+}
