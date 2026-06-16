@@ -1,0 +1,11 @@
+Customer Name,Email Address,Social Channel,Engagement Activity,Priority Intent,Timestamp
+Sarah Connor,sarah@example.com,Instagram,"added to cart; asked about sizing",High,2026-06-15T10:00:00Z
+John Doe,john@example.com,Facebook,"liked post; commented",Low,2026-06-15T11:00:00Z
+Emma Watson,emma@example.com,TikTok,"saved to wishlist; shared video; restock request",High,2026-06-15T12:00:00Z
+Michael Chang,mike@example.com,LinkedIn,"requested demo; downloaded whitepaper",Medium,2026-06-15T13:00:00Z
+Olivia Reyes,olivia@example.com,Twitter,"replied to thread; clicked link",Low,2026-06-15T14:00:00Z
+James Wilson,james@example.com,Instagram,"sizing inquiries",Medium,2026-06-15T15:00:00Z
+Sophia Patel,sophia@example.com,TikTok,"added to cart; immediate purchase intent",High,2026-06-15T16:00:00Z
+Liam Johnson,liam@example.com,Facebook,"viewed details",Low,2026-06-15T17:00:00Z
+Isabella Garcia,isabella@example.com,Instagram,"restock request; saved to wishlist",High,2026-06-15T18:00:00Z
+Lucas Martinez,lucas@example.com,Twitter,"retweeted",Low,2026-06-15T19:00:00Z
