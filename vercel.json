@@ -1,22 +1,22 @@
-{
-    "version": 2,
-    "builds": [
-        {
-            "src": "package.json", // now relative to the new root (frontend)
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "dist" // Vite’s default output folder inside this root
-            }
-        }
-    ],
-    "routes": [
-        {
-            "src": "/api/(.*)",
-            "dest": "https://smartleads-bi-backend.up.railway.app/api/$1"
-        },
-        {
-            "src": "/(.*)",
-            "dest": "/index.html"
-        }
-    ]
+﻿{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "https://smartleads-bi-backend.up.railway.app/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
