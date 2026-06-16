@@ -1,12 +1,11 @@
 {
     "version": 2,
-    "outputDirectory": "frontend/dist",
     "builds": [
         {
-            "src": "frontend/package.json",
+            "src": "package.json", // now relative to the new root (frontend)
             "use": "@vercel/static-build",
             "config": {
-                "distDir": "dist"
+                "distDir": "dist" // Vite’s default output folder inside this root
             }
         }
     ],
