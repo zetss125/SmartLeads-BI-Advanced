@@ -5,15 +5,11 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist"
+        "outputDirectory": "dist"
       }
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "https://smartleads-bi-backend.up.railway.app/api/$1"
-    },
     {
       "src": "/(.*)",
       "dest": "/index.html"
