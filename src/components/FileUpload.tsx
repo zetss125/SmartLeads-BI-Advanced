@@ -52,6 +52,11 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
         method: "POST",
         body: formData,
       });
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        const text = await response.text();
+        throw new Error(`Server returned ${response.status}. Make sure you are logged in.`);
+      }
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || "Failed to upload file");
@@ -67,6 +72,11 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
             return fd;
           })(),
         });
+        const forceContentType = forceResponse.headers.get("content-type") || "";
+        if (!forceContentType.includes("application/json")) {
+          const text = await forceResponse.text();
+          throw new Error(`Server returned ${forceResponse.status}. Make sure you are logged in.`);
+        }
         const forceData = await forceResponse.json();
         if (!forceResponse.ok) {
           throw new Error(forceData.error || "Failed to process file");

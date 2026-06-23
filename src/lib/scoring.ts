@@ -1,10 +1,16 @@
 import * as path from "path";
 import * as fs from "fs";
-import * as ort from "onnxruntime-node";
 import { tokenize } from "@/lib/tokenizer";
 import { NormalizedLead } from "@/types";
 
-let session: ort.InferenceSession | null = null;
+let ort: any = null;
+try {
+  ort = require("onnxruntime-node");
+} catch {
+  // onnxruntime-node binary not available (e.g. Vercel serverless)
+}
+
+let session: any = null;
 
 function getModelPath(): string {
   const possiblePaths = [
@@ -14,30 +20,25 @@ function getModelPath(): string {
   for (const p of possiblePaths) {
     if (fs.existsSync(p)) return p;
   }
-  return possiblePaths[0];
-}
-
-async function getONNXSession(): Promise<ort.InferenceSession> {
-  if (session) return session;
-
-  const modelPath = getModelPath();
-  if (!fs.existsSync(modelPath)) {
-    throw new Error(`ONNX model file not found. Make sure to run the training script first.`);
-  }
-
-  session = await ort.InferenceSession.create(modelPath);
-  return session;
+  return "";
 }
 
 async function runModelInference(tokenIds: number[]): Promise<number> {
-  const sess = await getONNXSession();
+  if (!ort) return 50.0;
 
-  const bigIntIds = new BigInt64Array(tokenIds.map(id => BigInt(id)));
-  const inputTensor = new ort.Tensor("int64", bigIntIds, [1, 32]);
+  const modelPath = getModelPath();
+  if (!modelPath) return 50.0;
 
   try {
-    const feeds: Record<string, ort.Tensor> = { input_ids: inputTensor };
-    const outputs = await sess.run(feeds);
+    if (!session) {
+      session = await ort.InferenceSession.create(modelPath);
+    }
+
+    const bigIntIds = new BigInt64Array(tokenIds.map(id => BigInt(id)));
+    const inputTensor = new ort.Tensor("int64", bigIntIds, [1, 32]);
+
+    const feeds: Record<string, any> = { input_ids: inputTensor };
+    const outputs = await session.run(feeds);
     const scoreTensor = outputs.score;
     const scoreData = scoreTensor.data as Float32Array;
     return scoreData[0];
