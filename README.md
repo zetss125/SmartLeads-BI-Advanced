@@ -1,59 +1,43 @@
 # SmartLeads BI
 
-SmartLeads BI is an AI-powered lead generation and scoring platform designed for small and medium retailers. It transforms raw social media engagement data into actionable, prioritized leads, automating marketing strategies and chat-based data analysis.
+SmartLeads BI is a Next.js lead intelligence demo for retailers. It uploads lead files, normalizes the data, scores each lead, and shows live mock growth across the dashboard, leads, analytics, approval, and social media flows.
 
-## Features
+## Core Features
 
-- **Automated Lead Scoring:** Employs a transformer-based encoder via ONNX Runtime to score leads based on behavioral signals.
-- **Universal Data Ingestion:** Supports CSV, JSON, and Excel file uploads for extracting lead engagement metrics from any social media platform.
-- **AI Chatbot Assistant:** Features an OpenRouter-powered (gpt-oss-20b) assistant that allows natural language queries against your lead dataset.
-- **Marketing Strategy Generator:** Automatically generates detailed marketing plans and task lists based on current lead distributions.
-- **Premium UI:** A responsive, dark-mode enabled dashboard built with React and Tailwind CSS v4.
+- CSV, JSON, and Excel lead upload
+- Automatic column mapping with optional OpenRouter assistance
+- Lead scoring with ONNX fallback behavior and business-rule boosts
+- Live in-memory lead growth simulation
+- Dashboard buttons for live growth, approval email flow, and mock social post flow
+- Leads management with live polling, filters, contact status, and CSV export
+- AI chatbot and marketing strategy generation through OpenRouter
+- Mock social analytics, competitor review generation, and review analysis
 
-## Setup Instructions
+## Live Demo Flows
 
-### Prerequisites
-- Node.js (v20+)
-- Python 3.10+ (for model generation, optional if ONNX model is already generated)
+- `/live-growth`: shows a live graph of leads and customers increasing.
+- `/approval-simulation`: simulates an email approval request, form submission, and confirmation email.
+- `/mock-social`: simulates replying under a promoted social post and converting that reply into a scored lead.
 
-### 1. Environment Configuration
+All demo data is in memory only. Restarting the server clears users, leads, approvals, events, and mock social comments.
 
-In the `backend` directory, create a `.env` file:
+## Environment
+
+Create `.env.local`:
+
 ```env
-OPENROUTER_API_KEY=your_openrouter_api_key_here
-OPENROUTER_MODEL=openai/gpt-oss-20b:free
-NODE_ENV=development
+OPENROUTER_API_KEY=your_openrouter_key
+OPENROUTER_MODEL=poolside/laguna-m.1:free
+JWT_SECRET=replace-this-secret
 ```
 
-### 2. Backend Setup
-```bash
-cd backend
+The app still works without `OPENROUTER_API_KEY`, but AI-assisted features use fallback responses.
+
+## Run
+
+```powershell
 npm install
 npm run dev
 ```
-The API server will run on `http://localhost:3000`.
 
-### 3. Frontend Setup
-```bash
-cd frontend
-npm install
-npm run dev
-```
-The React app will be accessible at `http://localhost:5173`.
-
-### 4. Playwright Testing
-```bash
-cd frontend
-npx playwright test
-```
-
-## Deployment
-
-### Backend (Railway)
-The backend is configured for deployment on Railway via the included `railway.toml`. Connect your GitHub repository to Railway to automatically build and deploy the Node/Express server.
-
-### Frontend (GitHub Pages / Vercel)
-The frontend can be built via `npm run build`. A `vercel.json` file is included in the frontend directory to proxy `/api/*` requests to the deployed Railway backend.
-
-## License
-MIT
+Open `http://localhost:3000`, register an account, and use `sample_dataset.csv` or the live demo pages.

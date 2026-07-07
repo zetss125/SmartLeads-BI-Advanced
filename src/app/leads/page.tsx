@@ -14,9 +14,9 @@ export default function LeadsPage() {
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
 
-  const fetchLeads = useCallback(async () => {
+  const fetchLeads = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res = await fetch("/api/leads");
       const data = await res.json();
       setLeads(data);
@@ -30,6 +30,8 @@ export default function LeadsPage() {
 
   useEffect(() => {
     fetchLeads();
+    const interval = setInterval(() => fetchLeads(true), 5000);
+    return () => clearInterval(interval);
   }, [fetchLeads]);
 
   useEffect(() => {
@@ -89,7 +91,10 @@ export default function LeadsPage() {
               Leads Management
             </h1>
             <p className="text-slate-500 dark:text-slate-400 mt-1">
-              Upload, analyze, and manage your leads
+              Upload, analyze, and manage your live leads
+            </p>
+            <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-2 font-medium">
+              {leads.length} live leads currently tracked
             </p>
           </div>
           <div className="flex gap-3">

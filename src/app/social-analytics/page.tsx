@@ -50,6 +50,7 @@ export default function SocialAnalyticsPage() {
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [liveStats, setLiveStats] = useState({ total: 0, customers: 0, approvals: 0 });
 
   const fetchData = async () => {
     try {
@@ -65,6 +66,22 @@ export default function SocialAnalyticsPage() {
 
   useEffect(() => {
     fetchData();
+    const fetchLiveStats = async () => {
+      try {
+        const res = await fetch("/api/live-feed");
+        const json = await res.json();
+        setLiveStats({
+          total: json.stats.total,
+          customers: json.stats.customers,
+          approvals: json.stats.approvals,
+        });
+      } catch {
+        // Keep the analytics page usable if live stats are briefly unavailable.
+      }
+    };
+    fetchLiveStats();
+    const interval = setInterval(fetchLiveStats, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const syncToMain = async () => {
@@ -200,8 +217,8 @@ export default function SocialAnalyticsPage() {
               color: "text-purple-600 bg-purple-100 dark:bg-purple-900/30",
             },
             {
-              label: "Active Leads",
-              value: data?.leads?.length?.toString() || "0",
+              label: "Live Main Leads",
+              value: liveStats.total.toString(),
               icon: BarChart3,
               color: "text-amber-600 bg-amber-100 dark:bg-amber-900/30",
             },

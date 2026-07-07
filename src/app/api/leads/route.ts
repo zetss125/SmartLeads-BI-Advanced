@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLeads, deleteLead, updateLeadContacted } from "@/store";
+import { advanceLiveSimulation } from "@/lib/liveSimulation";
 
 export async function GET(req: NextRequest) {
   try {
+    await advanceLiveSimulation();
     let filtered = getLeads();
     const { searchParams } = new URL(req.url);
     const name = searchParams.get("name");

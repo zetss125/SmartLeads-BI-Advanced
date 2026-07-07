@@ -1,117 +1,111 @@
-# SmartLeads BI - Next.js Implementation (Completed)
+# SmartLeads BI Agent Notes
 
-## Architecture
+## Current Architecture
 
-```
-C:\SmartLeads-BI-advanced\
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx              # Root layout
-│   │   ├── page.tsx                # Dashboard
-│   │   ├── globals.css             # Tailwind v4 entry
-│   │   ├── login/page.tsx          # Login/Register page
-│   │   ├── leads/page.tsx          # Lead management with filters + CSV export
-│   │   ├── upload/page.tsx         # Dataset upload with drag-drop
-│   │   ├── settings/page.tsx       # Dark mode + preferences
-│   │   ├── social-analytics/page.tsx # Mock social media analytics site
-│   │   ├── competitor-reviews/page.tsx # Product review analysis site
-│   │   └── api/
-│   │       ├── auth/               # register, login, logout, me
-│   │       ├── leads/route.ts      # CRUD leads
-│   │       ├── upload/route.ts     # CSV/JSON/Excel upload + auto-mapping
-│   │       ├── chat/route.ts       # AI chatbot via OpenRouter
-│   │       ├── marketing/route.ts  # Marketing strategy generation
-│   │       ├── social-analytics/route.ts # Mock social analytics data
-│   │       ├── reviews/generate/route.ts # Competitor review generation
-│   │       └── competitor-reviews/route.ts # Review analysis + strategy
-│   ├── components/
-│   │   ├── Layout.tsx              # Sidebar nav + mobile menu
-│   │   ├── LeadCard.tsx            # Lead display card
-│   │   ├── FileUpload.tsx          # Drag-drop file upload
-│   │   ├── ChatbotPanel.tsx        # AI assistant chat panel
-│   │   └── MarketingPanel.tsx      # Strategy + task management
-│   ├── lib/
-│   │   ├── tokenizer.ts            # ONNX tokenizer (fixed vocab)
-│   │   ├── normalizer.ts           # File parsing + column mapping
-│   │   ├── scoring.ts              # ONNX inference + behavioral boosts
-│   │   ├── chatbot.ts              # OpenRouter AI chat
-│   │   ├── marketing.ts            # OpenRouter marketing strategy
-│   │   └── auth.ts                 # JWT + bcrypt auth
-│   ├── store/
-│   │   └── index.ts                # In-memory leads storage
-│   ├── types/
-│   │   └── index.ts                # TypeScript interfaces
-│   └── middleware.ts               # Auth redirect middleware
-├── backend/
-│   └── assets/
-│       └── model.onnx              # Trained scoring model
-├── .env.local                      # Environment configuration
-├── next.config.ts
-├── postcss.config.mjs
-├── tsconfig.json
-└── package.json
-```
+SmartLeads BI is implemented as a single Next.js app.
 
-## Features Implemented
+- Pages live in `src/app`.
+- API routes live in `src/app/api`.
+- Shared UI lives in `src/components`.
+- Lead scoring, normalization, chatbot, marketing, auth, and live simulation helpers live in `src/lib`.
+- In-memory data storage lives in `src/store/index.ts`.
 
-### 1. Authentication System
-- Register with name, email, password
-- Login with JWT tokens + httpOnly cookies
-- Protected routes and API middleware
-- Logout with cookie cleanup
+There is no database. Leads, users, approvals, live events, chart history, and mock social comments are kept only while the server process is running.
 
-### 2. Lead Scoring Pipeline
-- Upload CSV/JSON/Excel files with drag-drop
-- Auto-detect column mapping with LLM fallback
-- ONNX model inference for AI scoring
-- Behavioral rule boosts (cart added, restock, sizing, urgency)
-- Priority classification (High 80+, Medium 45-79, Low <45)
-- CSV export with all lead data
+## Main Backend Flows
 
-### 3. Dashboard & Lead Management
-- Real-time stats (total, high/medium/low counts)
-- Search by name, email, platform
-- Priority filter buttons
-- Lead cards with score, signals, urgency badges
+### Lead Upload
 
-### 4. AI Chatbot Assistant
-- OpenRouter via openai/gpt-oss-20b:free
-- Natural language querying
-- Filter, summarize, analyze leads
-- Update contact status via chat
+`POST /api/upload`
 
-### 5. Marketing Strategy Generator
-- Lead analytics compilation
-- OpenRouter-generated marketing plans
-- Task assignment to team (Sarah, David, Alex)
-- Task completion tracking
+1. Accepts CSV, JSON, or Excel.
+2. Maps source columns to standard lead fields.
+3. Normalizes each row into a `NormalizedLead`.
+4. Scores each lead.
+5. Stores the result in memory.
 
-### 6. Mock Social Media Analytics Site
-- Dashboard with followers, engagement, post stats
-- Lead list with follower counts and engagement rates
-- Comment section per lead with sentiment analysis
-- Generate sample datasets (CSV download)
-- Sync leads to main app via API connection button
+### Lead Scoring
 
-### 7. Competitor Review Analysis System
-- Upload product image or enter product name
-- Generate realistic mock reviews with ratings
-- Rating distribution visualization
-- AI-powered competitor strategy report
-- Strategic recommendations with priority levels
+Lead scoring starts with ONNX model inference when available. If the runtime or model is unavailable, the score starts at `50`.
 
-## OpenRouter Configuration
+Business-rule boosts then adjust the score:
 
-```
-Default model: openai/gpt-oss-20b:free
-API endpoint: https://openrouter.ai/api/v1/chat/completions
+- Added to cart: `+15`
+- Restock request: `+15`
+- Sizing, size, or fit question: `+10`
+- Wishlist or save: `+5`
+- High urgency: `+10`
+- Low urgency: `-10`
+
+Priority bands:
+
+- `80+`: High
+- `45-79`: Medium
+- `<45`: Low
+
+### Live Simulation
+
+`GET /api/live-feed`
+
+Advances the live demo and returns:
+
+- Total lead count
+- High, medium, and low priority counts
+- Mock customer count
+- Approval count
+- Recent leads
+- Live events
+- Growth chart history
+
+The live feed is intentionally in-memory and non-persistent.
+
+### Approval Simulation
+
+`GET /api/approvals`
+
+Returns submitted approval records.
+
+`POST /api/approvals`
+
+Creates an approved consent record and adds a scored lead to the main lead list.
+
+### Mock Social Page
+
+`GET /api/mock-social`
+
+Returns promoted mock social posts and comments.
+
+`POST /api/mock-social`
+
+Adds a comment under a promoted post, detects basic buying signals, creates a scored lead, and updates the social post.
+
+## User-Facing Pages
+
+- `/`: dashboard with live counts and entry buttons for new demo flows
+- `/leads`: live lead management
+- `/live-growth`: live lead and customer graph
+- `/approval-simulation`: mock email consent and confirmation flow
+- `/mock-social`: promoted post reply simulation
+- `/social-analytics`: mock analytics and lead sync
+- `/upload`: dataset upload
+- `/competitor-reviews`: review generation and analysis
+- `/settings`: theme preferences
+
+## OpenRouter
+
+Preferred model in `.env.local`:
+
+```env
+OPENROUTER_MODEL=poolside/laguna-m.1:free
 ```
 
-## Running the App
+The app has fallback behavior when the API key is missing.
 
-```powershell
-cd SmartLeads-BI-advanced
-npm run dev
-# Open http://localhost:3000
-# Register an account, then upload sample_dataset.csv
-```
+## Validation Checklist
+
+- Dashboard counts update through `/api/live-feed`.
+- Leads page refreshes without full-page flicker.
+- Live growth graph updates as leads/customers increase.
+- Approval form submission creates an approved record and a new scored lead.
+- Mock social reply adds a comment and a new scored lead.
+- README remains minimal and current.
