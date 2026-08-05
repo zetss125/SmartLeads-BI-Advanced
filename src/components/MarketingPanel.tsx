@@ -18,8 +18,12 @@ export default function MarketingPanel() {
         body: JSON.stringify({ assignTasks: true }),
       });
       const data = await response.json();
-      setStrategy(data.strategy);
-      setTasks(data.tasks || []);
+      setStrategy(
+        typeof data?.strategy === "string" && data.strategy.trim()
+          ? data.strategy
+          : "Unable to generate a marketing strategy right now. Please try again."
+      );
+      setTasks(Array.isArray(data?.tasks) ? data.tasks : []);
     } catch (err) {
       console.error(err);
     } finally {

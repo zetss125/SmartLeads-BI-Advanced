@@ -32,13 +32,14 @@ export default function DashboardPage() {
     try {
       const res = await fetch("/api/live-feed");
       const data = await res.json();
+      const s = data?.stats && typeof data.stats === "object" ? data.stats : {};
       setStats({
-        total: data.stats.total,
-        high: data.stats.high,
-        medium: data.stats.medium,
-        low: data.stats.low,
-        customers: data.stats.customers,
-        approvals: data.stats.approvals,
+        total: typeof s.total === "number" ? s.total : 0,
+        high: typeof s.high === "number" ? s.high : 0,
+        medium: typeof s.medium === "number" ? s.medium : 0,
+        low: typeof s.low === "number" ? s.low : 0,
+        customers: typeof s.customers === "number" ? s.customers : 0,
+        approvals: typeof s.approvals === "number" ? s.approvals : 0,
       });
     } catch (err) {
       console.error(err);

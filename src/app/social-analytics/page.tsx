@@ -56,7 +56,9 @@ export default function SocialAnalyticsPage() {
     try {
       const res = await fetch("/api/social-analytics");
       const json = await res.json();
-      setData(json);
+      setData(
+        json && typeof json === "object" && !Array.isArray(json) ? json : null
+      );
     } catch (err) {
       console.error(err);
     } finally {
@@ -70,10 +72,11 @@ export default function SocialAnalyticsPage() {
       try {
         const res = await fetch("/api/live-feed");
         const json = await res.json();
+        const s = json?.stats && typeof json.stats === "object" ? json.stats : {};
         setLiveStats({
-          total: json.stats.total,
-          customers: json.stats.customers,
-          approvals: json.stats.approvals,
+          total: typeof s.total === "number" ? s.total : 0,
+          customers: typeof s.customers === "number" ? s.customers : 0,
+          approvals: typeof s.approvals === "number" ? s.approvals : 0,
         });
       } catch {
         // Keep the analytics page usable if live stats are briefly unavailable.
@@ -120,7 +123,7 @@ export default function SocialAnalyticsPage() {
         }),
       });
       const json = await res.json();
-      if (json.success && json.dataset) {
+      if (json.success && Array.isArray(json.dataset) && json.dataset.length > 0) {
         const csv = [
           Object.keys(json.dataset[0]).join(","),
           ...json.dataset.map((r: any) =>
@@ -145,7 +148,7 @@ export default function SocialAnalyticsPage() {
   };
 
   const getCommentsForLead = (leadId: string) => {
-    return data?.comments.filter((c) => c.leadId === leadId) || [];
+    return (data?.comments || []).filter((c) => c.leadId === leadId) || [];
   };
 
   if (loading) {
@@ -253,7 +256,7 @@ export default function SocialAnalyticsPage() {
               </h2>
             </div>
             <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
-              {data?.leads.map((lead) => (
+              {(data?.leads || []).map((lead) => (
                 <div
                   key={lead.id}
                   className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 cursor-pointer transition-colors ${

@@ -77,6 +77,51 @@ function ensureReviewIds(reviews: any[]): any[] {
   return reviews.map((r, i) => ({ ...r, id: r.id || `rev_${Date.now()}_${i}` }));
 }
 
+function buildSummary(reviews: any[]) {
+  const total = reviews.length;
+  const average = total ? reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / total : 0;
+  return {
+    totalReviews: total,
+    averageRating: parseFloat(average.toFixed(1)),
+    ratingDistribution: {
+      5: reviews.filter((r) => Math.round(Number(r.rating)) === 5).length,
+      4: reviews.filter((r) => Math.round(Number(r.rating)) === 4).length,
+      3: reviews.filter((r) => Math.round(Number(r.rating)) === 3).length,
+      2: reviews.filter((r) => Math.round(Number(r.rating)) === 2).length,
+      1: reviews.filter((r) => Math.round(Number(r.rating)) === 1).length,
+    },
+    recommendedPercent: parseFloat(((reviews.filter((r) => Number(r.rating) >= 4).length / (total || 1)) * 100).toFixed(0)),
+  };
+}
+
+function normalizeReviews(reviews: any[]): any[] {
+  return reviews
+    .filter((r: any) => r && typeof r === "object")
+    .map((r: any, i: number) => {
+      const reviewerName = r?.reviewer?.name || "Anonymous";
+      return {
+        id: r?.id || `rev_${Date.now()}_${i}`,
+        productName: r?.productName || "",
+        productDescription: r?.productDescription || "",
+        reviewer: {
+          name: reviewerName,
+          avatar: r?.reviewer?.avatar || reviewerName.charAt(0).toUpperCase(),
+          verified: !!r?.reviewer?.verified,
+          location: r?.reviewer?.location || "",
+        },
+        rating: Math.max(1, Math.min(5, Math.round(Number(r?.rating) || 3))),
+        title: r?.title || "Review",
+        body: r?.body || "",
+        pros: Array.isArray(r?.pros) ? r.pros.slice(0, 3) : [],
+        cons: Array.isArray(r?.cons) ? r.cons.slice(0, 3) : [],
+        date: r?.date || new Date().toISOString(),
+        helpful: Number(r?.helpful) || 0,
+        verifiedPurchase: !!r?.verifiedPurchase,
+        wouldRecommend: r?.wouldRecommend || (Number(r?.rating) >= 4 ? "Yes" : "Maybe"),
+      };
+    });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { productName, productDescription, count = 6 } = await req.json();
@@ -91,22 +136,10 @@ export async function POST(req: NextRequest) {
     if (!apiKey) {
       const generated = generateProductReviews(productName, productDescription, count);
       const reviews = ensureReviewIds(generated);
-      const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
       return NextResponse.json({
         success: true,
         reviews,
-        summary: {
-          totalReviews: reviews.length,
-          averageRating: parseFloat(avgRating.toFixed(1)),
-          ratingDistribution: {
-            5: reviews.filter(r => r.rating === 5).length,
-            4: reviews.filter(r => r.rating === 4).length,
-            3: reviews.filter(r => r.rating === 3).length,
-            2: reviews.filter(r => r.rating === 2).length,
-            1: reviews.filter(r => r.rating === 1).length,
-          },
-          recommendedPercent: parseFloat(((reviews.filter(r => r.rating >= 4).length / reviews.length) * 100).toFixed(0))
-        }
+        summary: buildSummary(reviews),
       });
     }
 
@@ -161,27 +194,19 @@ Respond ONLY with a JSON object in this exact format:
       }
 
       const parsed = JSON.parse(content);
-      if (parsed.reviews) parsed.reviews = ensureReviewIds(parsed.reviews);
-      return NextResponse.json({ success: true, ...parsed });
+      const rawReviews = Array.isArray(parsed?.reviews) ? parsed.reviews : [];
+      const reviews = normalizeReviews(rawReviews);
+      if (reviews.length === 0) {
+        throw new Error("No reviews generated");
+      }
+      return NextResponse.json({ success: true, reviews, summary: buildSummary(reviews) });
     } catch {
       const generated = generateProductReviews(productName, productDescription, count);
       const reviews = ensureReviewIds(generated);
-      const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
       return NextResponse.json({
         success: true,
         reviews,
-        summary: {
-          totalReviews: reviews.length,
-          averageRating: parseFloat(avgRating.toFixed(1)),
-          ratingDistribution: {
-            5: reviews.filter(r => r.rating === 5).length,
-            4: reviews.filter(r => r.rating === 4).length,
-            3: reviews.filter(r => r.rating === 3).length,
-            2: reviews.filter(r => r.rating === 2).length,
-            1: reviews.filter(r => r.rating === 1).length,
-          },
-          recommendedPercent: parseFloat(((reviews.filter(r => r.rating >= 4).length / reviews.length) * 100).toFixed(0))
-        }
+        summary: buildSummary(reviews),
       });
     }
   } catch (error) {

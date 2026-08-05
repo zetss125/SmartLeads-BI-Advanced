@@ -19,8 +19,9 @@ export default function LeadsPage() {
       if (!silent) setLoading(true);
       const res = await fetch("/api/leads");
       const data = await res.json();
-      setLeads(data);
-      setFilteredLeads(data);
+      const normalized = Array.isArray(data) ? data : [];
+      setLeads(normalized);
+      setFilteredLeads(normalized);
     } catch (err) {
       console.error(err);
     } finally {

@@ -25,6 +25,12 @@ export default function LeadCard({ lead }: { lead: NormalizedLead }) {
 
   const hasBreakdown = lead.scoreBreakdown && lead.scoreBreakdown.length > 0;
 
+  const formattedDate = (() => {
+    if (!lead.date) return "Recent";
+    const d = new Date(lead.date);
+    return isNaN(d.getTime()) ? "Recent" : d.toLocaleDateString();
+  })();
+
   return (
     <div className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-slate-100 transition-all hover:shadow-md dark:bg-slate-800 dark:border-slate-700/50">
       <div className={`absolute top-0 right-0 h-1 w-full ${badgeColor}`} />
@@ -37,9 +43,7 @@ export default function LeadCard({ lead }: { lead: NormalizedLead }) {
           <p className="text-sm text-slate-500 flex items-center gap-1 mt-1">
             <Tag className="h-3 w-3 shrink-0" />{" "}
             {lead.platform || "Social Media"} &bull;{" "}
-            {lead.date
-              ? new Date(lead.date).toLocaleDateString()
-              : "Recent"}
+            {formattedDate}
           </p>
         </div>
         <div

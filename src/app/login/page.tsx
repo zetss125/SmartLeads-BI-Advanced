@@ -39,10 +39,19 @@ export default function LoginPage() {
         body: JSON.stringify(body),
       });
 
-      const data = await response.json();
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || "Authentication failed");
+        throw new Error(data?.error || "Authentication failed");
+      }
+
+      if (!data?.token) {
+        throw new Error("Authentication failed");
       }
 
       router.push("/");

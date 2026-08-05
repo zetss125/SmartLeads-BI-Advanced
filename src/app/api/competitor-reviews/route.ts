@@ -94,7 +94,26 @@ DO NOT include emojis. Return ONLY raw JSON.`;
       }
 
       const parsed = JSON.parse(content);
-      return NextResponse.json(parsed);
+      const strategy =
+        typeof parsed?.strategy === "string" && parsed.strategy.trim()
+          ? parsed.strategy
+          : null;
+      if (!strategy) {
+        return NextResponse.json(
+          { error: "Analysis service returned an invalid response" },
+          { status: 502 }
+        );
+      }
+      const recommendations = Array.isArray(parsed?.recommendations)
+        ? parsed.recommendations
+            .filter((r: any) => r && typeof r === "object")
+            .map((r: any) => ({
+              priority: ["High", "Medium", "Low"].includes(r.priority) ? r.priority : "Medium",
+              action: typeof r.action === "string" ? r.action : "",
+              impact: typeof r.impact === "string" ? r.impact : "",
+            }))
+        : [];
+      return NextResponse.json({ strategy, recommendations });
     } catch {
       const avgRating = reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length;
       return NextResponse.json({

@@ -45,6 +45,51 @@ interface AnalysisResult {
   recommendations: { priority: string; action: string; impact: string }[];
 }
 
+function normalizeReview(r: any): Review {
+  const reviewerName = r?.reviewer?.name || "Anonymous";
+  return {
+    id: r?.id || `rev_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    productName: r?.productName || "",
+    productDescription: r?.productDescription || "",
+    reviewer: {
+      name: reviewerName,
+      avatar: r?.reviewer?.avatar || reviewerName.charAt(0).toUpperCase(),
+      verified: !!r?.reviewer?.verified,
+      location: r?.reviewer?.location || "",
+    },
+    rating: Number(r?.rating) || 3,
+    title: r?.title || "Review",
+    body: r?.body || "",
+    pros: Array.isArray(r?.pros) ? r.pros : [],
+    cons: Array.isArray(r?.cons) ? r.cons : [],
+    date: r?.date || new Date().toISOString(),
+    helpful: Number(r?.helpful) || 0,
+    verifiedPurchase: !!r?.verifiedPurchase,
+    wouldRecommend: r?.wouldRecommend || (Number(r?.rating) >= 4 ? "Yes" : "Maybe"),
+  };
+}
+
+function computeSummary(reviews: Review[]) {
+  const total = reviews.length;
+  const average = total ? reviews.reduce((s, r) => s + r.rating, 0) / total : 0;
+  const ratingDistribution: Record<string, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  reviews.forEach((r) => {
+    const key = String(Math.max(1, Math.min(5, Math.round(r.rating))));
+    ratingDistribution[key] = (ratingDistribution[key] || 0) + 1;
+  });
+  return {
+    totalReviews: total,
+    averageRating: parseFloat(average.toFixed(1)),
+    ratingDistribution,
+    recommendedPercent: parseFloat(((reviews.filter((r) => r.rating >= 4).length / (total || 1)) * 100).toFixed(0)),
+  };
+}
+
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? "" : d.toLocaleDateString();
+}
+
 export default function CompetitorReviewsPage() {
   const [productName, setProductName] = useState("");
   const [productDescription, setProductDescription] = useState("");
@@ -60,6 +105,7 @@ export default function CompetitorReviewsPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [expandedReview, setExpandedReview] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [error, setError] = useState("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -74,6 +120,7 @@ export default function CompetitorReviewsPage() {
   const generateReviews = async () => {
     if (!productName.trim()) return;
     setLoading(true);
+    setError("");
     setReviews([]);
     setSummary(null);
     setAnalysis(null);
@@ -88,13 +135,29 @@ export default function CompetitorReviewsPage() {
           count: 8,
         }),
       });
-      const data = await res.json();
-      if (data.reviews) {
-        setReviews(data.reviews);
-        setSummary(data.summary);
+
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
       }
+
+      if (!res.ok) {
+        setError(data?.error || "Failed to generate reviews. Please try again.");
+        return;
+      }
+
+      if (!data || !Array.isArray(data.reviews) || data.reviews.length === 0) {
+        setError("The review service returned no reviews. Please try again.");
+        return;
+      }
+
+      const normalized = data.reviews.map(normalizeReview);
+      setReviews(normalized);
+      setSummary(computeSummary(normalized));
     } catch {
-      console.error("Failed to generate reviews");
+      setError("Failed to generate reviews. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -103,6 +166,7 @@ export default function CompetitorReviewsPage() {
   const analyzeReviews = async () => {
     if (reviews.length === 0) return;
     setAnalyzing(true);
+    setError("");
     try {
       const res = await fetch("/api/competitor-reviews", {
         method: "POST",
@@ -112,10 +176,36 @@ export default function CompetitorReviewsPage() {
           productName: productName.trim(),
         }),
       });
-      const data = await res.json();
-      setAnalysis(data);
+
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
+
+      if (!res.ok || !data || typeof data.strategy !== "string" || !data.strategy.trim()) {
+        setError(
+          data?.error ||
+            "The analysis service returned an invalid response. Please try again."
+        );
+        return;
+      }
+
+      setAnalysis({
+        strategy: data.strategy,
+        recommendations: Array.isArray(data.recommendations)
+          ? data.recommendations
+              .filter((r: any) => r && typeof r === "object")
+              .map((r: any) => ({
+                priority: ["High", "Medium", "Low"].includes(r.priority) ? r.priority : "Medium",
+                action: typeof r.action === "string" ? r.action : "",
+                impact: typeof r.impact === "string" ? r.impact : "",
+              }))
+          : [],
+      });
     } catch {
-      console.error("Failed to analyze reviews");
+      setError("Failed to analyze reviews. Please try again.");
     } finally {
       setAnalyzing(false);
     }
@@ -149,8 +239,14 @@ export default function CompetitorReviewsPage() {
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3 mb-8">
-          <div className="lg:col-span-1 rounded-2xl bg-white p-6 shadow-sm border border-slate-100 dark:bg-slate-800 dark:border-slate-700/50">
+        {error && (
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <p>{error}</p>
+          </div>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-3 mb-8">          <div className="lg:col-span-1 rounded-2xl bg-white p-6 shadow-sm border border-slate-100 dark:bg-slate-800 dark:border-slate-700/50">
             <h2 className="font-semibold text-slate-900 dark:text-white mb-4">
               Product Details
             </h2>
@@ -310,7 +406,7 @@ export default function CompetitorReviewsPage() {
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-sm font-medium">
-                            {review.reviewer.avatar}
+                            {review.reviewer.avatar || "R"}
                           </div>
                           <div>
                             <p className="font-medium text-sm text-slate-900 dark:text-white">
@@ -322,14 +418,14 @@ export default function CompetitorReviewsPage() {
                               )}
                             </p>
                             <p className="text-xs text-slate-400">
-                              {review.reviewer.location}
+                              {review.reviewer.location || "Location unknown"}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
                           <StarRating rating={review.rating} />
                           <p className="text-xs text-slate-400 mt-1">
-                            {new Date(review.date).toLocaleDateString()}
+                            {formatDate(review.date)}
                           </p>
                         </div>
                       </div>
@@ -346,15 +442,15 @@ export default function CompetitorReviewsPage() {
                         {review.body}
                       </p>
 
-                      {(review.pros.length > 0 || review.cons.length > 0) && (
+                      {(review.pros?.length > 0 || review.cons?.length > 0) && (
                         <div className="mt-2 flex gap-4 text-xs">
-                          {review.pros.length > 0 && (
+                          {review.pros?.length > 0 && (
                             <div className="flex items-center gap-1 text-emerald-600">
                               <ThumbsUp className="h-3 w-3" />
                               <span>{review.pros.slice(0, 2).join(", ")}</span>
                             </div>
                           )}
-                          {review.cons.length > 0 && (
+                          {review.cons?.length > 0 && (
                             <div className="flex items-center gap-1 text-rose-600">
                               <ThumbsDown className="h-3 w-3" />
                               <span>{review.cons.slice(0, 2).join(", ")}</span>
@@ -370,7 +466,7 @@ export default function CompetitorReviewsPage() {
                             Verified Purchase
                           </span>
                         )}
-                        {review.body.length > 150 && (
+                        {(review.body || "").length > 150 && (
                           <button
                             onClick={() =>
                               setExpandedReview(
@@ -432,7 +528,7 @@ export default function CompetitorReviewsPage() {
                   ))}
                 </div>
 
-                {analysis.recommendations.length > 0 && (
+                {analysis.recommendations && analysis.recommendations.length > 0 && (
                   <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
                     <h3 className="font-semibold text-slate-900 dark:text-white mb-4">
                       Strategic Recommendations
