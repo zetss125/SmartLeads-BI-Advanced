@@ -17,8 +17,10 @@ import {
   Star,
   Menu,
   X,
+  Filter,
 } from "lucide-react";
 import ChatbotPanel from "@/components/ChatbotPanel";
+import CommandPalette from "@/components/CommandPalette";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -33,6 +35,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { path: "/live-growth", label: "Live Growth", icon: LineChart },
     { path: "/approval-simulation", label: "Approvals", icon: MailCheck },
     { path: "/mock-social", label: "Mock Social", icon: MessageSquareText },
+    { path: "/social-pipeline", label: "Social Pipeline", icon: Filter },
     { path: "/social-analytics", label: "Social Analytics", icon: BarChart3 },
     { path: "/competitor-reviews", label: "Review Analysis", icon: Star },
     { path: "/settings", label: "Settings", icon: SettingsIcon },
@@ -68,7 +71,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             const Icon = item.icon;
             const isActive = pathname === item.path;
             return (
-              <Link
+               <Link
                 key={item.path}
                 href={item.path}
                 onClick={() => setSidebarOpen(false)}
@@ -128,6 +131,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </button>
 
         <ChatbotPanel isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+        <CommandPalette />
       </main>
     </div>
   );

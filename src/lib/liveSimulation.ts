@@ -1,5 +1,10 @@
 import { scoreLead } from "@/lib/scoring";
 import {
+  emitApprovalChanged,
+  emitLeadCreated,
+  emitLeadScored,
+} from "@/lib/eventBus";
+import {
   addApproval,
   addLead,
   generateId,
@@ -13,6 +18,7 @@ import {
 } from "@/store";
 import { LeadApproval, NormalizedLead } from "@/types";
 
+const AUTO_LEAD_INTERVAL_MS = 15000;
 let lastAutoLeadAt = 0;
 let demoLeadIndex = 0;
 
@@ -78,6 +84,8 @@ export async function createAndStoreLead(input?: Partial<NormalizedLead>, eventD
   };
   const scored = await scoreLead(draft);
   addLead(scored);
+  emitLeadCreated(scored.name, scored.platform, scored.id!);
+  emitLeadScored(scored.name, scored.score ?? 0, scored.priority ?? "Medium", scored.id!);
   recordLiveEvent({
     type: eventDescription?.toLowerCase().includes("social") ? "social" : "lead",
     title: "New live lead captured",
@@ -104,15 +112,12 @@ export async function advanceLiveSimulation(): Promise<void> {
   }
 
   const elapsed = now - lastAutoLeadAt;
-  if (elapsed < 7000) {
+  if (elapsed < AUTO_LEAD_INTERVAL_MS) {
     recordHistoryPoint();
     return;
   }
 
-  const count = Math.min(2, Math.floor(elapsed / 7000));
-  for (let i = 0; i < count; i++) {
-    await createAndStoreLead(undefined, "A shopper interacted with a live campaign and became a scored lead.");
-  }
+  await createAndStoreLead(undefined, "A shopper interacted with a live campaign and became a scored lead.");
   lastAutoLeadAt = now;
 }
 
@@ -157,6 +162,7 @@ export async function submitApprovalRequest(data: {
   };
 
   addApproval(approval);
+  emitApprovalChanged(approval.name, approval.status, approval.id);
   recordLiveEvent({
     type: "approval",
     title: "Approval request submitted",

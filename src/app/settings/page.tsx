@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
-import { Moon, Sun, Bell, Shield, Globe } from "lucide-react";
+import { Moon, Sun, Bell, Shield, Globe, Key } from "lucide-react";
+import Link from "next/link";
 
 export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(false);
@@ -140,6 +141,33 @@ export default function SettingsPage() {
                   }`}
                 />
               </button>
+            </div>
+          </div>
+          
+          <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100 dark:bg-slate-800 dark:border-slate-700/50">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+              Developer
+            </h2>
+            <div className="flex items-center justify-between py-4">
+              <div className="flex items-center gap-4">
+                <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                  <Key className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-medium text-slate-900 dark:text-white">
+                    API Keys
+                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Manage API keys for programmatic access
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/settings/api-keys"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-sm font-medium rounded-lg transition-colors"
+              >
+                Manage
+              </Link>
             </div>
           </div>
 

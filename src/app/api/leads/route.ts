@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLeads, deleteLead, updateLeadContacted } from "@/store";
 import { advanceLiveSimulation } from "@/lib/liveSimulation";
+import { enforceAuth } from "@/lib/authGuard";
 
 export async function GET(req: NextRequest) {
+  const auth = enforceAuth(req, "leads:read");
+  if (auth.error) return auth.error;
+
   try {
     await advanceLiveSimulation();
     let filtered = getLeads();
@@ -26,7 +30,9 @@ export async function GET(req: NextRequest) {
       filtered = filtered.filter(l => l.contacted === isContacted);
     }
 
-    return NextResponse.json(filtered);
+    const response = NextResponse.json(filtered);
+    Object.entries(auth.headers || {}).forEach(([k, v]) => response.headers.set(k, v));
+    return response;
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }

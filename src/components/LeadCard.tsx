@@ -1,9 +1,13 @@
 "use client";
 
-import { Star, Clock, Tag, Mail, Smartphone } from "lucide-react";
+import { useState } from "react";
+import { Star, Clock, Tag, Mail, Smartphone, ChevronDown, ChevronUp, BarChart3 } from "lucide-react";
 import { NormalizedLead } from "@/types";
+import ScoreBreakdown from "@/components/ScoreBreakdown";
 
 export default function LeadCard({ lead }: { lead: NormalizedLead }) {
+  const [expanded, setExpanded] = useState(false);
+
   const isHigh = (lead.score || 0) >= 80;
   const isMedium = (lead.score || 0) >= 45 && (lead.score || 0) < 80;
 
@@ -18,6 +22,8 @@ export default function LeadCard({ lead }: { lead: NormalizedLead }) {
     : isMedium
     ? "bg-amber-500"
     : "bg-rose-500";
+
+  const hasBreakdown = lead.scoreBreakdown && lead.scoreBreakdown.length > 0;
 
   return (
     <div className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm border border-slate-100 transition-all hover:shadow-md dark:bg-slate-800 dark:border-slate-700/50">
@@ -94,12 +100,40 @@ export default function LeadCard({ lead }: { lead: NormalizedLead }) {
         >
           {lead.priority} Priority
         </span>
-        {lead.contacted && (
-          <span className="text-xs text-slate-400 dark:text-slate-500">
-            Contacted
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {lead.contacted && (
+            <span className="text-xs text-slate-400 dark:text-slate-500">
+              Contacted
+            </span>
+          )}
+          {hasBreakdown && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
+            >
+              <BarChart3 className="h-3 w-3" />
+              {expanded ? "Hide" : "Score"} Analysis
+              {expanded ? (
+                <ChevronUp className="h-3 w-3" />
+              ) : (
+                <ChevronDown className="h-3 w-3" />
+              )}
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Expandable Score Breakdown */}
+      {expanded && hasBreakdown && (
+        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/50">
+          <ScoreBreakdown
+            factors={lead.scoreBreakdown!}
+            confidenceLevel={lead.confidenceLevel}
+            trendLine={lead.trendLine}
+            recommendedAction={lead.recommendedAction}
+          />
+        </div>
+      )}
     </div>
   );
 }

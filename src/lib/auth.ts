@@ -1,41 +1,48 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { User } from "@/types";
+import { getUsersStore } from "@/lib/persistentStore";
 
-const users: User[] = [];
 const JWT_SECRET = process.env.JWT_SECRET || "smartleads-bi-jwt-secret";
 
 export async function registerUser(name: string, email: string, password: string): Promise<{ user: Omit<User, 'password'>; token: string }> {
-  const existing = users.find(u => u.email === email);
+  const store = getUsersStore();
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const existing = store.getById(normalizedEmail) || store.getAll().find((u: User) => u.email.toLowerCase() === normalizedEmail);
   if (existing) {
     throw new Error("User with this email already exists");
   }
 
   const hashedPassword = await bcrypt.hash(password, 12);
-  const user: User = {
-    id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-    name,
-    email,
-    password: hashedPassword,
-    createdAt: new Date().toISOString()
-  };
+  const id = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const createdAt = new Date().toISOString();
 
-  users.push(user);
+  store.add({
+    id,
+    name,
+    email: normalizedEmail,
+    password: hashedPassword,
+    createdAt,
+  });
 
   const token = jwt.sign(
-    { id: user.id, email: user.email, name: user.name },
+    { id, email: normalizedEmail, name },
     JWT_SECRET,
     { expiresIn: "7d" }
   );
 
   return {
-    user: { id: user.id, name: user.name, email: user.email, createdAt: user.createdAt },
+    user: { id, name, email: normalizedEmail, createdAt },
     token
   };
 }
 
 export async function loginUser(email: string, password: string): Promise<{ user: Omit<User, 'password'>; token: string }> {
-  const user = users.find(u => u.email === email);
+  const store = getUsersStore();
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const user = store.getAll().find((u: User) => u.email.toLowerCase() === normalizedEmail);
   if (!user) {
     throw new Error("Invalid email or password");
   }

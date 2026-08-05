@@ -1,10 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Layout from "@/components/Layout";
 import MarketingPanel from "@/components/MarketingPanel";
+import AlertBanner from "@/components/AlertBanner";
+import QuickActions from "@/components/QuickActions";
 import Link from "next/link";
 import { BarChart3, MailCheck, MessageSquareText, ShieldCheck, Users, Target, TrendingUp, Loader2 } from "lucide-react";
+
+const STATS_REFRESH_EVENTS = new Set([
+  "lead.created",
+  "lead.scored",
+  "lead.urgent_alert",
+  "approval.status_changed",
+  "social.comment_converted",
+]);
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
@@ -16,38 +26,70 @@ export default function DashboardPage() {
     approvals: 0,
   });
   const [loading, setLoading] = useState(true);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await fetch("/api/live-feed");
+      const data = await res.json();
+      setStats({
+        total: data.stats.total,
+        high: data.stats.high,
+        medium: data.stats.medium,
+        low: data.stats.low,
+        customers: data.stats.customers,
+        approvals: data.stats.approvals,
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const scheduleStatsRefresh = useCallback(() => {
+    if (refreshTimerRef.current) return;
+    refreshTimerRef.current = setTimeout(() => {
+      refreshTimerRef.current = null;
+      fetchStats();
+    }, 500);
+  }, [fetchStats]);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    fetch("/api/seed", { method: "POST" }).then(() => {
+      fetchStats();
+    });
+
+    const es = new EventSource("/api/events");
+
+    es.onmessage = (e) => {
       try {
-        const res = await fetch("/api/live-feed");
-        const data = await res.json();
-        setStats({
-          total: data.stats.total,
-          high: data.stats.high,
-          medium: data.stats.medium,
-          low: data.stats.low,
-          customers: data.stats.customers,
-          approvals: data.stats.approvals,
-        });
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+        const event = JSON.parse(e.data) as { type: string };
+        if (STATS_REFRESH_EVENTS.has(event.type)) {
+          scheduleStatsRefresh();
+        }
+      } catch {
+        // Ignore non-JSON messages (e.g. heartbeats)
       }
     };
 
-    fetchStats();
-    const interval = setInterval(fetchStats, 4000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      es.close();
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
+    };
+  }, [fetchStats, scheduleStatsRefresh]);
 
   return (
     <Layout>
+      <AlertBanner />
       <div className="p-8">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">
           Dashboard
         </h1>
+
+        <QuickActions />
 
         {loading ? (
           <div className="flex items-center justify-center py-20">

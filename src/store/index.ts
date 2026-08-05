@@ -5,86 +5,90 @@ import {
   NormalizedLead,
   SocialComment,
   SocialPost,
+  AuditEntry,
 } from "@/types";
+import {
+  getLeadsStore,
+  getApprovalsStore,
+  getEventsStore,
+  getSocialStore,
+  getAuditStore,
+} from "@/lib/persistentStore";
+import { generateId } from "@/lib/encryption";
 
-let inMemoryLeads: NormalizedLead[] = [];
-let inMemoryApprovals: LeadApproval[] = [];
-let liveEvents: LiveEvent[] = [];
+// ─── Live History (kept in-memory as it's ephemeral chart data) ───
 let liveHistory: LiveHistoryPoint[] = [];
-let socialPosts: SocialPost[] = [];
 
 const CUSTOMER_BASE = 24;
 
+// ─── Leads ────────────────────────────────────────────────────────
+
 export function getLeads(): NormalizedLead[] {
-  return [...inMemoryLeads];
+  return getLeadsStore().getAll();
 }
 
 export function setLeads(leads: NormalizedLead[]): void {
-  inMemoryLeads = leads;
+  getLeadsStore().set(leads);
 }
 
 export function addLeads(leads: NormalizedLead[]): void {
-  inMemoryLeads = [...leads, ...inMemoryLeads];
+  getLeadsStore().addMany(leads);
 }
 
 export function addLead(lead: NormalizedLead): void {
-  addLeads([lead]);
+  getLeadsStore().add(lead);
 }
 
 export function deleteLead(id: string): boolean {
-  const initialLength = inMemoryLeads.length;
-  inMemoryLeads = inMemoryLeads.filter(l => l.id !== id);
-  return inMemoryLeads.length !== initialLength;
+  return getLeadsStore().delete(id);
 }
 
 export function updateLeadContacted(id: string, contacted: boolean): NormalizedLead | null {
-  const lead = inMemoryLeads.find(l => l.id === id);
-  if (!lead) return null;
-  lead.contacted = contacted;
-  return { ...lead };
+  return getLeadsStore().update(id, { contacted });
 }
 
 export function updateLeadsContacted(ids: string[], contacted: boolean): void {
-  inMemoryLeads.forEach(l => {
-    if (l.id && ids.includes(l.id)) {
-      l.contacted = contacted;
-    }
-  });
+  getLeadsStore().updateMany(ids, { contacted });
 }
 
-export function generateId(): string {
-  return "lead_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now().toString(36);
-}
+export { generateId };
 
 export function getCustomerCount(): number {
-  const contacted = inMemoryLeads.filter((l) => l.contacted).length;
-  const approved = inMemoryApprovals.filter((a) => a.status === "Approved").length;
+  const contacted = getLeadsStore().filter((l: NormalizedLead) => l.contacted === true).length;
+  const approved = getApprovalsStore().filter((a: LeadApproval) => a.status === "Approved").length;
   return CUSTOMER_BASE + contacted + approved;
 }
 
+// ─── Approvals ────────────────────────────────────────────────────
+
 export function getApprovals(): LeadApproval[] {
-  return [...inMemoryApprovals];
+  return getApprovalsStore().getAll();
 }
 
 export function addApproval(approval: LeadApproval): void {
-  inMemoryApprovals = [approval, ...inMemoryApprovals];
+  getApprovalsStore().add(approval);
 }
 
+// ─── Live Events ──────────────────────────────────────────────────
+
 export function getLiveEvents(): LiveEvent[] {
-  return [...liveEvents];
+  return getEventsStore().getAll();
 }
 
 export function recordLiveEvent(event: Omit<LiveEvent, "id" | "timestamp"> & { timestamp?: string }): LiveEvent {
   const saved: LiveEvent = {
-    id: "event_" + Math.random().toString(36).substring(2, 10) + "_" + Date.now().toString(36),
+    id: generateId("event"),
     timestamp: event.timestamp || new Date().toISOString(),
     type: event.type,
     title: event.title,
     description: event.description,
   };
-  liveEvents = [saved, ...liveEvents].slice(0, 40);
+  getEventsStore().add(saved);
+  getEventsStore().trim(40);
   return saved;
 }
+
+// ─── Live History ─────────────────────────────────────────────────
 
 export function getLiveHistory(): LiveHistoryPoint[] {
   return [...liveHistory];
@@ -93,9 +97,9 @@ export function getLiveHistory(): LiveHistoryPoint[] {
 export function recordHistoryPoint(): LiveHistoryPoint {
   const point: LiveHistoryPoint = {
     timestamp: new Date().toISOString(),
-    totalLeads: inMemoryLeads.length,
+    totalLeads: getLeadsStore().count(),
     customers: getCustomerCount(),
-    approvals: inMemoryApprovals.length,
+    approvals: getApprovalsStore().count(),
   };
 
   const previous = liveHistory[liveHistory.length - 1];
@@ -113,9 +117,12 @@ export function recordHistoryPoint(): LiveHistoryPoint {
   return point;
 }
 
+// ─── Social Posts ─────────────────────────────────────────────────
+
 export function getSocialPosts(): SocialPost[] {
   seedSocialPosts();
-  return socialPosts.map((post) => ({
+  const store = getSocialStore();
+  return store.getAll().map((post: SocialPost) => ({
     ...post,
     comments: [...post.comments],
   }));
@@ -123,21 +130,26 @@ export function getSocialPosts(): SocialPost[] {
 
 export function addSocialComment(postId: string, comment: SocialComment): SocialPost | null {
   seedSocialPosts();
-  const post = socialPosts.find((p) => p.id === postId);
+  const store = getSocialStore();
+  const post = store.getById(postId) as SocialPost | undefined;
   if (!post) return null;
 
-  post.comments = [...post.comments, comment];
-  post.likes += 3 + Math.floor(Math.random() * 8);
+  const updatedComments = [...post.comments, comment];
+  const updatedLikes = post.likes + 3 + Math.floor(Math.random() * 8);
+  store.update(postId, { comments: updatedComments, likes: updatedLikes });
+
   return {
     ...post,
-    comments: [...post.comments],
+    comments: updatedComments,
+    likes: updatedLikes,
   };
 }
 
 function seedSocialPosts(): void {
-  if (socialPosts.length > 0) return;
+  const store = getSocialStore();
+  if (store.count() > 0) return;
 
-  socialPosts = [
+  const posts: SocialPost[] = [
     {
       id: "post_denim_drop",
       platform: "Instagram",
@@ -186,4 +198,22 @@ function seedSocialPosts(): void {
       comments: [],
     },
   ];
+
+  posts.forEach((p) => store.add(p));
+}
+
+// ─── Audit Trail ──────────────────────────────────────────────────
+
+export function recordAudit(entry: Omit<AuditEntry, "id" | "timestamp">): void {
+  const auditEntry: AuditEntry = {
+    id: generateId("audit"),
+    timestamp: new Date().toISOString(),
+    ...entry,
+  };
+  getAuditStore().add(auditEntry);
+  getAuditStore().trim(500); // Keep last 500 audit entries
+}
+
+export function getAuditLog(): AuditEntry[] {
+  return getAuditStore().getAll();
 }
