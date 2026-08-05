@@ -118,7 +118,9 @@ Instructions:
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json"
-        }
+        },
+        timeout: 30000,
+        signal: AbortSignal.timeout(30000)
       }
     );
 

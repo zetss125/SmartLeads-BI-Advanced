@@ -32,13 +32,14 @@ export default function AlertBanner() {
     setEventCount((c) => c + 1);
 
     if (event.type === "lead.urgent_alert") {
+      const payload = event.payload || {};
       const alert: UrgentAlert = {
         id: event.id,
-        leadName: event.payload.leadName || "Unknown",
-        trigger: event.payload.trigger || "Urgent signal detected",
-        recommendedAction: event.payload.recommendedAction || "Follow up immediately",
-        leadId: event.payload.leadId || "",
-        minutesAgo: event.payload.minutesAgo || 0,
+        leadName: payload.leadName || "Unknown",
+        trigger: payload.trigger || "Urgent signal detected",
+        recommendedAction: payload.recommendedAction || "Follow up immediately",
+        leadId: payload.leadId || "",
+        minutesAgo: payload.minutesAgo || 0,
         timestamp: event.timestamp,
       };
       setAlerts((prev) => [alert, ...prev].slice(0, 10));

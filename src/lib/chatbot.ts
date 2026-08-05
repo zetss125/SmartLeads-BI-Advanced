@@ -75,7 +75,9 @@ Remember: DO NOT include emojis. Return only the raw JSON.`;
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json"
-        }
+        },
+        timeout: 30000,
+        signal: AbortSignal.timeout(30000)
       }
     );
 

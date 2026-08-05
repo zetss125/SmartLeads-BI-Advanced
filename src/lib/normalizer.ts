@@ -113,7 +113,9 @@ Respond ONLY with a JSON object mapping standard fields to the exact input colum
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json"
-        }
+        },
+        timeout: 30000,
+        signal: AbortSignal.timeout(30000)
       }
     );
 

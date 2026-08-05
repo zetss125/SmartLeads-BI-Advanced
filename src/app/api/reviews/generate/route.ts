@@ -184,7 +184,9 @@ Respond ONLY with a JSON object in this exact format:
           headers: {
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json"
-          }
+          },
+          timeout: 30000,
+          signal: AbortSignal.timeout(30000)
         }
       );
 
