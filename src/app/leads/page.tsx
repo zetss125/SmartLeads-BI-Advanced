@@ -40,9 +40,9 @@ export default function LeadsPage() {
     if (search) {
       filtered = filtered.filter(
         (l) =>
-          l.name.toLowerCase().includes(search.toLowerCase()) ||
-          l.email?.toLowerCase().includes(search.toLowerCase()) ||
-          l.platform.toLowerCase().includes(search.toLowerCase())
+          String(l.name || "").toLowerCase().includes(search.toLowerCase()) ||
+          String(l.email || "").toLowerCase().includes(search.toLowerCase()) ||
+          String(l.platform || "").toLowerCase().includes(search.toLowerCase())
       );
     }
     if (priorityFilter) {
@@ -66,7 +66,7 @@ export default function LeadsPage() {
       l.score?.toString() || "",
       l.priority || "",
       l.urgency,
-      l.signals.join("; "),
+      (Array.isArray(l.signals) ? l.signals : []).join("; "),
       l.date,
       l.contacted ? "Yes" : "No",
     ]);

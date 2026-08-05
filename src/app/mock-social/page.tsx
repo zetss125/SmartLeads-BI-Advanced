@@ -20,10 +20,20 @@ export default function MockSocialPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchPosts = async () => {
-    const res = await fetch("/api/mock-social");
-    const data = await res.json();
-    setPosts(data.posts || []);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/mock-social");
+      const data = await res.json();
+      const posts = Array.isArray(data?.posts)
+        ? data.posts.filter(
+            (p: any) => p && typeof p === "object"
+          )
+        : [];
+      setPosts(posts);
+    } catch {
+      setPosts([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchLiveTotal = async () => {
@@ -119,10 +129,10 @@ export default function MockSocialPage() {
                     <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">{post.caption}</p>
                     <div className="mt-4 flex gap-5 text-sm text-slate-500">
                       <span className="flex items-center gap-1"><Heart className="h-4 w-4" />{post.likes}</span>
-                      <span className="flex items-center gap-1"><MessageCircle className="h-4 w-4" />{(post.comments || []).length}</span>
+                      <span className="flex items-center gap-1"><MessageCircle className="h-4 w-4" />{(Array.isArray(post.comments) ? post.comments : []).length}</span>
                     </div>
                     <div className="mt-4 space-y-3 border-t border-slate-100 pt-4 dark:border-slate-700/50">
-                      {(post.comments || []).slice(-3).map((comment) => (
+                      {(Array.isArray(post.comments) ? post.comments : []).slice(-3).map((comment) => (
                         <div key={comment.id} className="text-sm">
                           <p className="font-medium text-slate-800 dark:text-slate-200">{comment.user}</p>
                           <p className="text-slate-500 dark:text-slate-400">{comment.text}</p>

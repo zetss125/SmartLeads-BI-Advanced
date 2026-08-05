@@ -56,9 +56,22 @@ export default function SocialAnalyticsPage() {
     try {
       const res = await fetch("/api/social-analytics");
       const json = await res.json();
-      setData(
-        json && typeof json === "object" && !Array.isArray(json) ? json : null
-      );
+      const obj =
+        json && typeof json === "object" && !Array.isArray(json) ? json : {};
+      const leads = Array.isArray(obj.leads)
+        ? obj.leads.filter((l: any) => l && typeof l === "object")
+        : [];
+      const comments = Array.isArray(obj.comments)
+        ? obj.comments.filter((c: any) => c && typeof c === "object")
+        : [];
+      setData({
+        followers: typeof obj.followers === "number" ? obj.followers : 0,
+        following: typeof obj.following === "number" ? obj.following : 0,
+        posts: typeof obj.posts === "number" ? obj.posts : 0,
+        engagement: typeof obj.engagement === "number" ? obj.engagement : 0,
+        leads,
+        comments,
+      });
     } catch (err) {
       console.error(err);
     } finally {
@@ -279,7 +292,7 @@ export default function SocialAnalyticsPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-slate-900 dark:text-white">
-                        {lead.followers.toLocaleString()} followers
+                        {(Number(lead.followers) || 0).toLocaleString()} followers
                       </p>
                       <p className="text-xs text-slate-500">
                         {lead.engagement}% eng.
@@ -312,7 +325,7 @@ export default function SocialAnalyticsPage() {
                             className="flex gap-3 text-sm"
                           >
                             <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-medium text-slate-600 dark:text-slate-300 shrink-0">
-                              {comment.user.charAt(0).toUpperCase()}
+                              {String(comment.user || "?").charAt(0).toUpperCase()}
                             </div>
                             <div className="flex-1">
                               <p className="font-medium text-slate-700 dark:text-slate-300">

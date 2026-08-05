@@ -23,7 +23,7 @@ export default function LeadCard({ lead }: { lead: NormalizedLead }) {
     ? "bg-amber-500"
     : "bg-rose-500";
 
-  const hasBreakdown = lead.scoreBreakdown && lead.scoreBreakdown.length > 0;
+  const hasBreakdown = Array.isArray(lead.scoreBreakdown) && lead.scoreBreakdown.length > 0;
 
   const formattedDate = (() => {
     if (!lead.date) return "Recent";
@@ -75,7 +75,7 @@ export default function LeadCard({ lead }: { lead: NormalizedLead }) {
       </p>
 
       <div className="flex flex-wrap gap-2">
-        {lead.signals?.map((signal, idx) => (
+        {(Array.isArray(lead.signals) ? lead.signals : []).map((signal, idx) => (
           <span
             key={idx}
             className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300"

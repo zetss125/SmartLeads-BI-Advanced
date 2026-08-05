@@ -40,7 +40,7 @@ function getTrendColor(trend: string, isResistance: boolean): string {
 }
 
 export default function ScoreBreakdown({ factors, confidenceLevel, trendLine, recommendedAction }: Props) {
-  if (!factors || factors.length === 0) return null;
+  if (!Array.isArray(factors) || factors.length === 0) return null;
 
   const positiveFactors = factors.filter((f) => f.weight >= 0);
   const resistanceFactors = factors.filter((f) => f.weight < 0);
@@ -102,7 +102,7 @@ export default function ScoreBreakdown({ factors, confidenceLevel, trendLine, re
                 <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
                   {factor.rawValue}
                   <span className="text-[10px] text-slate-400 ml-0.5">
-                    ×{factor.weight.toFixed(2)}
+                    ×{(factor.weight || 0).toFixed(2)}
                   </span>
                 </span>
               </div>
@@ -112,9 +112,9 @@ export default function ScoreBreakdown({ factors, confidenceLevel, trendLine, re
                   style={{ width: `${factor.rawValue}%` }}
                 />
               </div>
-              {(factor.evidence || []).length > 0 && (
+              {(Array.isArray(factor.evidence) ? factor.evidence : []).length > 0 && (
                 <div className="mt-0.5 flex flex-wrap gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {(factor.evidence || []).map((e, i) => (
+                  {(Array.isArray(factor.evidence) ? factor.evidence : []).map((e, i) => (
                     <span
                       key={i}
                       className="text-[10px] px-1.5 py-0.5 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded"
@@ -154,7 +154,7 @@ export default function ScoreBreakdown({ factors, confidenceLevel, trendLine, re
                     <span className="text-xs font-mono text-red-500 dark:text-red-400">
                       {factor.rawValue}
                       <span className="text-[10px] text-red-400 ml-0.5">
-                        ×{factor.weight.toFixed(2)}
+                        ×{(factor.weight || 0).toFixed(2)}
                       </span>
                     </span>
                   </div>
@@ -164,9 +164,9 @@ export default function ScoreBreakdown({ factors, confidenceLevel, trendLine, re
                       style={{ width: `${factor.rawValue}%` }}
                     />
                   </div>
-                  {(factor.evidence || []).length > 0 && (
+                  {(Array.isArray(factor.evidence) ? factor.evidence : []).length > 0 && (
                     <div className="mt-0.5 flex flex-wrap gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {(factor.evidence || []).map((e, i) => (
+                      {(Array.isArray(factor.evidence) ? factor.evidence : []).map((e, i) => (
                         <span
                           key={i}
                           className="text-[10px] px-1.5 py-0.5 bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 rounded"

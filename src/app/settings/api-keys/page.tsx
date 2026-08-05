@@ -22,7 +22,9 @@ export default function APIKeysPage() {
       const res = await fetch("/api/keys");
       if (res.ok) {
         const data = await res.json();
-        setKeys(data.data || []);
+        setKeys(
+          Array.isArray(data?.data) ? data.data.filter((k: any) => k && typeof k === "object") : []
+        );
       }
     } catch (err) {
       console.error(err);

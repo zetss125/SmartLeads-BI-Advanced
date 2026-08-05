@@ -17,12 +17,13 @@ export default function LiveGrowthPage() {
       try {
         const res = await fetch("/api/live-feed");
         const data = await res.json();
-        setHistory(data.history || []);
-        setEvents(data.events || []);
+        setHistory(Array.isArray(data?.history) ? data.history : []);
+        setEvents(Array.isArray(data?.events) ? data.events : []);
+        const s = data?.stats && typeof data.stats === "object" ? data.stats : {};
         setStats({
-          total: data.stats.total,
-          customers: data.stats.customers,
-          approvals: data.stats.approvals,
+          total: typeof s.total === "number" ? s.total : 0,
+          customers: typeof s.customers === "number" ? s.customers : 0,
+          approvals: typeof s.approvals === "number" ? s.approvals : 0,
         });
       } catch (err) {
         console.error(err);

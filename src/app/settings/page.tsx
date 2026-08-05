@@ -11,8 +11,13 @@ export default function SettingsPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("darkMode");
-    const isDark = stored === "true";
+    let isDark = false;
+    try {
+      const stored = localStorage.getItem("darkMode");
+      isDark = stored === "true";
+    } catch {
+      isDark = false;
+    }
     setDarkMode(isDark);
     if (isDark) {
       document.documentElement.classList.add("dark");
@@ -22,7 +27,11 @@ export default function SettingsPage() {
   const toggleDarkMode = () => {
     const next = !darkMode;
     setDarkMode(next);
-    localStorage.setItem("darkMode", String(next));
+    try {
+      localStorage.setItem("darkMode", String(next));
+    } catch {
+      // Storage unavailable (private/restricted mode); theme still toggles for this session.
+    }
     if (next) {
       document.documentElement.classList.add("dark");
     } else {

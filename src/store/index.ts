@@ -124,7 +124,7 @@ export function getSocialPosts(): SocialPost[] {
   const store = getSocialStore();
   return store.getAll().map((post: SocialPost) => ({
     ...post,
-    comments: [...post.comments],
+    comments: Array.isArray(post.comments) ? [...post.comments] : [],
   }));
 }
 
@@ -134,7 +134,7 @@ export function addSocialComment(postId: string, comment: SocialComment): Social
   const post = store.getById(postId) as SocialPost | undefined;
   if (!post) return null;
 
-  const updatedComments = [...post.comments, comment];
+  const updatedComments = [...(Array.isArray(post.comments) ? post.comments : []), comment];
   const updatedLikes = post.likes + 3 + Math.floor(Math.random() * 8);
   store.update(postId, { comments: updatedComments, likes: updatedLikes });
 
