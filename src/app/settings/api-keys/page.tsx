@@ -44,7 +44,17 @@ export default function APIKeysPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newName,
-          scopes: ["leads:read", "leads:write", "scoring:run", "chat:query", "marketing:generate"]
+          scopes: [
+            "leads:read",
+            "leads:write",
+            "leads:delete",
+            "scoring:run",
+            "social:read",
+            "social:write",
+            "marketing:generate",
+            "chat:query",
+            "analytics:read"
+          ]
         }),
       });
       

@@ -5,9 +5,16 @@ const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
 const SALT = "smartleads-pii-salt-v1";
 
+export function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET environment variable is not set");
+  }
+  return secret;
+}
+
 function getEncryptionKey(): Buffer {
-  const secret = process.env.JWT_SECRET || "smartleads-bi-jwt-secret";
-  return crypto.pbkdf2Sync(secret, SALT, 100000, 32, "sha256");
+  return crypto.pbkdf2Sync(getJwtSecret(), SALT, 100000, 32, "sha256");
 }
 
 export function encryptPII(plaintext: string): string {

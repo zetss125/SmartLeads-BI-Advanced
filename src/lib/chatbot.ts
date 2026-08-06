@@ -19,8 +19,8 @@ export async function processChatQuery(
   const leadDataForLLM = leads.map((l) => ({
     id: l.id,
     name: l.name,
-    email: l.email,
-    phone: l.phone,
+    email: l.email ? "[redacted]" : "",
+    phone: l.phone ? "[redacted]" : "",
     platform: l.platform,
     score: l.score,
     priority: l.priority,
@@ -33,6 +33,8 @@ export async function processChatQuery(
   const systemPrompt = `You are the SmartLeads BI Lead Assistant. You help small/medium retailers query, analyze, and manage their lead datasets.
 You have access to the following lead dataset:
 ${JSON.stringify(leadDataForLLM)}
+
+Privacy: Customer email addresses and phone numbers are redacted as "[redacted]". Never attempt to guess, reveal, or reconstruct them in your responses, and do not include them in any output.
 
 Your task is to:
 1. Answer questions in natural language (summarize, analyze patterns, compare platforms, etc.).

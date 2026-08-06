@@ -4,6 +4,12 @@ import { validateAPIKey } from "@/lib/apiKeys";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { APIScope } from "@/types";
 
+export function getClientIp(request: NextRequest): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return request.headers.get("x-real-ip") || "unknown";
+}
+
 export function enforceAuth(request: NextRequest, requiredScope?: APIScope) {
   let isAuthenticated = false;
   let identifier = "";

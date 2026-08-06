@@ -1,9 +1,9 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { User } from "@/types";
 import { getUsersStore } from "@/lib/persistentStore";
-
-const JWT_SECRET = process.env.JWT_SECRET || "smartleads-bi-jwt-secret";
+import { getJwtSecret } from "@/lib/encryption";
 
 export async function registerUser(name: string, email: string, password: string): Promise<{ user: Omit<User, 'password'>; token: string }> {
   const store = getUsersStore();
@@ -15,7 +15,7 @@ export async function registerUser(name: string, email: string, password: string
   }
 
   const hashedPassword = await bcrypt.hash(password, 12);
-  const id = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const id = `user_${Date.now()}_${crypto.randomBytes(8).toString("hex")}`;
   const createdAt = new Date().toISOString();
 
   store.add({
@@ -28,7 +28,7 @@ export async function registerUser(name: string, email: string, password: string
 
   const token = jwt.sign(
     { id, email: normalizedEmail, name },
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: "7d" }
   );
 
@@ -54,7 +54,7 @@ export async function loginUser(email: string, password: string): Promise<{ user
 
   const token = jwt.sign(
     { id: user.id, email: user.email, name: user.name },
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: "7d" }
   );
 
@@ -66,7 +66,7 @@ export async function loginUser(email: string, password: string): Promise<{ user
 
 export function verifyToken(token: string): { id: string; email: string; name: string } | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string; name: string };
+    const decoded = jwt.verify(token, getJwtSecret()) as { id: string; email: string; name: string };
     return decoded;
   } catch {
     return null;

@@ -1,7 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loginUser } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rateLimit";
+import { getClientIp } from "@/lib/authGuard";
+
+const LOGIN_MAX_PER_MIN = 10;
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(`login:${ip}`, LOGIN_MAX_PER_MIN, 60_000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Too many login attempts. Please try again later." },
+      { status: 429, headers: { "Retry-After": "60" } }
+    );
+  }
+
   try {
     const { email, password } = await req.json();
 

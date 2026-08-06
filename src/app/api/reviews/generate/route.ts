@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
+import { enforceAuth } from "@/lib/authGuard";
 
 function generateProductReviews(productName: string, productDescription: string, count: number = 6) {
   const reviewers = [
@@ -124,17 +125,21 @@ function normalizeReviews(reviews: any[]): any[] {
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = enforceAuth(req, "analytics:read");
+    if (auth.error) return auth.error;
     const { productName, productDescription, count = 6 } = await req.json();
 
     if (!productName) {
       return NextResponse.json({ error: "Product name is required" }, { status: 400 });
     }
 
+    const safeCount = Math.max(1, Math.min(Number(count) || 6, 20));
+
     const apiKey = process.env.OPENROUTER_API_KEY;
     const model = process.env.OPENROUTER_MODEL || "openai/gpt-oss-20b:free";
 
     if (!apiKey) {
-      const generated = generateProductReviews(productName, productDescription, count);
+      const generated = generateProductReviews(productName, productDescription, safeCount);
       const reviews = ensureReviewIds(generated);
       return NextResponse.json({
         success: true,
@@ -144,7 +149,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const prompt = `Generate ${count} realistic product reviews for the following product:
+      const prompt = `Generate ${safeCount} realistic product reviews for the following product:
 
 Product Name: ${productName}
 Product Description: ${productDescription || "No description provided"}
@@ -203,7 +208,7 @@ Respond ONLY with a JSON object in this exact format:
       }
       return NextResponse.json({ success: true, reviews, summary: buildSummary(reviews) });
     } catch {
-      const generated = generateProductReviews(productName, productDescription, count);
+      const generated = generateProductReviews(productName, productDescription, safeCount);
       const reviews = ensureReviewIds(generated);
       return NextResponse.json({
         success: true,

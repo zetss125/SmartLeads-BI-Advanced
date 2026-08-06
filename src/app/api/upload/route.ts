@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseFile, autoMapColumns, getLLMAssistedMapping, normalizeRows, ColumnMapping } from "@/lib/normalizer";
 import { scoreBatchLeads } from "@/lib/scoring";
 import { addLeads, generateId } from "@/store";
+import { enforceAuth } from "@/lib/authGuard";
+
+const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_ROWS = 10000;
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = enforceAuth(req, "leads:write");
+    if (auth.error) return auth.error;
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const mappingRaw = formData.get("mapping") as string | null;
@@ -14,11 +21,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
+    if (file.size > MAX_FILE_BYTES) {
+      return NextResponse.json(
+        { error: `File is too large. Maximum allowed size is ${MAX_FILE_BYTES / (1024 * 1024)} MB.` },
+        { status: 413 }
+      );
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
     const rawRows = await parseFile(buffer, file.name);
 
     if (rawRows.length === 0) {
       return NextResponse.json({ error: "The uploaded file is empty" }, { status: 400 });
+    }
+
+    if (rawRows.length > MAX_ROWS) {
+      return NextResponse.json(
+        { error: `File contains too many rows (${rawRows.length}). Maximum allowed is ${MAX_ROWS}.` },
+        { status: 413 }
+      );
     }
 
     const headers = Object.keys(rawRows[0]);

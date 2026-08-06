@@ -1,4 +1,4 @@
-import * as xlsx from "xlsx";
+import ExcelJS from "exceljs";
 import csvParser from "csv-parser";
 import { Readable } from "stream";
 import axios from "axios";
@@ -16,15 +16,41 @@ export async function parseFile(buffer: Buffer, originalName: string): Promise<a
     } catch {
       throw new Error("Invalid JSON file format");
     }
-  } else if (ext === "xlsx" || ext === "xls") {
+  } else if (ext === "xlsx") {
     try {
-      const workbook = xlsx.read(buffer, { type: "buffer" });
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
-      return xlsx.utils.sheet_to_json(worksheet);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer as unknown as ExcelJS.Buffer);
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) {
+        throw new Error("Empty worksheet");
+      }
+      const headerValues = worksheet.getRow(1).values as unknown[];
+      const headers = headerValues.slice(1).map((h) => String(h ?? "").trim());
+      if (headers.length === 0) {
+        throw new Error("Empty worksheet");
+      }
+      const rows: Record<string, unknown>[] = [];
+      worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+        if (rowNumber === 1) return;
+        const values = row.values as unknown[];
+        const obj: Record<string, unknown> = {};
+        headers.forEach((header, i) => {
+          if (!header) return;
+          let value: unknown = values[i + 1];
+          if (value && typeof value === "object") {
+            const cell = value as { text?: string; result?: string };
+            value = cell.text ?? cell.result ?? "";
+          }
+          obj[header] = value;
+        });
+        rows.push(obj);
+      });
+      return rows;
     } catch {
       throw new Error("Invalid Excel file format");
     }
+  } else if (ext === "xls") {
+    throw new Error("Legacy .xls files are not supported. Please convert to .xlsx or CSV.");
   } else if (ext === "csv" || originalName.endsWith(".csv")) {
     return new Promise((resolve, reject) => {
       const results: any[] = [];

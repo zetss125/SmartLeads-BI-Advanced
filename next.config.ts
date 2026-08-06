@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["onnxruntime-node", "xlsx", "csv-parser"],
+  serverExternalPackages: ["onnxruntime-node", "exceljs", "csv-parser"],
 };
 
 export default nextConfig;

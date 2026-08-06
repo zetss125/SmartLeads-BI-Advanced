@@ -19,29 +19,20 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Authentication Presence Check (Real validation happens in the Node.js API routes)
-  let isAuthenticated = false;
-
-  const authHeader = request.headers.get("Authorization");
-  if (authHeader && authHeader.startsWith("Bearer slk_")) {
-    isAuthenticated = true; // API Key detected
-  } else {
-    const token = request.cookies.get("token")?.value;
-    if (token) {
-      isAuthenticated = true; // JWT detected
-    }
+  // 2. API routes: authentication is enforced inside every route via enforceAuth(),
+  // which validates the JWT cookie or API key and checks scopes. No presence-only
+  // check here (that was bypassable with any "Bearer slk_*" header).
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.next();
   }
 
-  // 3. Reject obviously unauthenticated requests early
-  if (!isAuthenticated) {
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+  // 3. Page routes: require a token cookie to be present. Pages are client-side shells;
+  // the actual data requests are protected by enforceAuth() in the API routes.
+  const token = request.cookies.get("token")?.value;
+  if (!token) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Rate Limiting and strict Token/Key validation are handled by the Node.js runtime 
-  // in individual API routes (since Edge runtime doesn't support 'fs' or 'jsonwebtoken').
   return NextResponse.next();
 }
 

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
+import { enforceAuth } from "@/lib/authGuard";
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = enforceAuth(req, "analytics:read");
+    if (auth.error) return auth.error;
     const { reviews, productName } = await req.json();
 
     if (!reviews || !Array.isArray(reviews) || reviews.length === 0) {

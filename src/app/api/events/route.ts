@@ -1,8 +1,13 @@
 import { addSSEClient, removeSSEClient } from "@/lib/eventBus";
+import { enforceAuth } from "@/lib/authGuard";
+import type { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = enforceAuth(req, "analytics:read");
+  if (auth.error) return auth.error;
+
   const stream = new ReadableStream({
     start(controller) {
       const clientId = addSSEClient(controller);

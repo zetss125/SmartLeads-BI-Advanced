@@ -40,6 +40,8 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const auth = enforceAuth(req, "leads:delete");
+    if (auth.error) return auth.error;
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
@@ -60,6 +62,8 @@ export async function DELETE(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const auth = enforceAuth(req, "leads:write");
+    if (auth.error) return auth.error;
     const { id, contacted } = await req.json();
 
     if (!id || contacted === undefined) {

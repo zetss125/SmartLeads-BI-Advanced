@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addSocialComment, getSocialPosts } from "@/store";
 import { createAndStoreLead } from "@/lib/liveSimulation";
+import { enforceAuth } from "@/lib/authGuard";
 
 function detectSignals(text: string): string[] {
   const lower = text.toLowerCase();
@@ -14,12 +15,18 @@ function detectSignals(text: string): string[] {
   return signals;
 }
 
-export async function GET() {
-  return NextResponse.json({ posts: getSocialPosts() });
+export async function GET(req: NextRequest) {
+  const auth = enforceAuth(req, "social:read");
+  if (auth.error) return auth.error;
+  const response = NextResponse.json({ posts: getSocialPosts() });
+  Object.entries(auth.headers || {}).forEach(([k, v]) => response.headers.set(k, v));
+  return response;
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = enforceAuth(req, "social:write");
+    if (auth.error) return auth.error;
     const { postId, user, email, text } = await req.json();
 
     if (!postId || !user || !text) {

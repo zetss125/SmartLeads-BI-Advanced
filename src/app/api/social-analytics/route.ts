@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
+import { enforceAuth } from "@/lib/authGuard";
 
 const MOCK_SOCIAL_DATA = {
   followers: 28450,
@@ -26,12 +27,18 @@ const MOCK_SOCIAL_DATA = {
   ]
 };
 
-export async function GET() {
-  return NextResponse.json(MOCK_SOCIAL_DATA);
+export async function GET(req: NextRequest) {
+  const auth = enforceAuth(req, "social:read");
+  if (auth.error) return auth.error;
+  const response = NextResponse.json(MOCK_SOCIAL_DATA);
+  Object.entries(auth.headers || {}).forEach(([k, v]) => response.headers.set(k, v));
+  return response;
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = enforceAuth(req, "social:write");
+    if (auth.error) return auth.error;
     const body = await req.json();
     const { action, params } = body;
 
