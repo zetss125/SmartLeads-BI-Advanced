@@ -3,6 +3,8 @@ import { generateMarketingStrategy } from "@/lib/marketing";
 import { getLeads } from "@/store";
 import { enforceAuth } from "@/lib/authGuard";
 
+export const maxDuration = 300;
+
 export async function POST(req: NextRequest) {
   try {
     const auth = enforceAuth(req, "marketing:generate");

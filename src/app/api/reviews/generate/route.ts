@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import { enforceAuth } from "@/lib/authGuard";
 
+export const maxDuration = 300;
+
 function generateProductReviews(productName: string, productDescription: string, count: number = 6) {
   const reviewers = [
     { name: "Alex Chen", avatar: "AC", verified: true, location: "New York, NY" },
@@ -190,8 +192,8 @@ Respond ONLY with a JSON object in this exact format:
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json"
           },
-          timeout: 30000,
-          signal: AbortSignal.timeout(30000)
+          timeout: 120000,
+          signal: AbortSignal.timeout(120000)
         }
       );
 

@@ -4,6 +4,8 @@ import { getLeads, updateLeadsContacted } from "@/store";
 import { NormalizedLead } from "@/types";
 import { enforceAuth } from "@/lib/authGuard";
 
+export const maxDuration = 300;
+
 const FILTER_FIELDS = new Set(["score", "priority", "urgency", "platform", "name", "date", "contacted"]);
 const FILTER_OPERATORS = new Set(["gt", "lt", "eq", "contains"]);
 const MAX_UPDATE_IDS = 100;

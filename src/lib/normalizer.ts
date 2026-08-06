@@ -140,8 +140,8 @@ Respond ONLY with a JSON object mapping standard fields to the exact input colum
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json"
         },
-        timeout: 30000,
-        signal: AbortSignal.timeout(30000)
+        timeout: 120000,
+        signal: AbortSignal.timeout(120000)
       }
     );
 

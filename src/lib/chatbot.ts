@@ -78,8 +78,8 @@ Remember: DO NOT include emojis. Return only the raw JSON.`;
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json"
         },
-        timeout: 30000,
-        signal: AbortSignal.timeout(30000)
+        timeout: 120000,
+        signal: AbortSignal.timeout(120000)
       }
     );
 

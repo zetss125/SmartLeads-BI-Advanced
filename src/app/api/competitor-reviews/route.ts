@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import { enforceAuth } from "@/lib/authGuard";
 
+export const maxDuration = 300;
+
 export async function POST(req: NextRequest) {
   try {
     const auth = enforceAuth(req, "analytics:read");
@@ -88,8 +90,8 @@ DO NOT include emojis. Return ONLY raw JSON.`;
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json"
           },
-          timeout: 30000,
-          signal: AbortSignal.timeout(30000)
+          timeout: 120000,
+          signal: AbortSignal.timeout(120000)
         }
       );
 
