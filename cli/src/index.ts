@@ -84,7 +84,7 @@ async function main() {
         console.log("Please provide a query.");
         return;
       }
-      const res = await api.post("/chat", { message: query });
+      const res = await api.post("/chat", { query });
       console.log(`\n🤖 AI Response:\n\n${res.data.message}\n`);
     } else {
       console.log(`Unknown command: ${command} ${subCommand || ""}`);
